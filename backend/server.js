@@ -12,6 +12,7 @@ const __dirname = path.dirname(__filename);
 
 const USERS_FILE = path.join(__dirname, 'data', 'users.json');
 const PUZZLES_FILE = path.join(__dirname, 'data', 'puzzles.json');
+const LOTTERY_FILE = path.join(__dirname, 'data', 'lottery.json');
 
 // Load environment variables
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
@@ -66,6 +67,25 @@ async function readPuzzles() {
     } catch (err) {
         return {};
     }
+}
+
+/**
+ * Read lottery data from JSON file
+ */
+async function readLottery() {
+    try {
+        const data = await fs.readFile(LOTTERY_FILE, 'utf-8');
+        return JSON.parse(data);
+    } catch (err) {
+        return { history: [] };
+    }
+}
+
+/**
+ * Write lottery data to JSON file
+ */
+async function writeLottery(lottery) {
+    await fs.writeFile(LOTTERY_FILE, JSON.stringify(lottery, null, 2));
 }
 
 // API Routes
@@ -322,6 +342,124 @@ fastify.post('/api/admin/reset-entries', async (request, reply) => {
         success: true,
         message: 'All entries have been reset to 0',
         totalUsers: Object.keys(users).length
+    };
+});
+
+// Lottery Routes
+
+/**
+ * Perform weighted lottery based on entry counts
+ */
+function performWeightedLottery(users, winnerCount) {
+    // Filter users with at least 1 entry
+    const eligibleUsers = Object.entries(users)
+        .filter(([_, data]) => data.entries > 0)
+        .map(([email, data]) => ({ email, entries: data.entries }));
+
+    if (eligibleUsers.length === 0) {
+        return [];
+    }
+
+    // Calculate total entries
+    const totalEntries = eligibleUsers.reduce((sum, user) => sum + user.entries, 0);
+
+    // Perform weighted random selection
+    const winners = [];
+    const remainingUsers = [...eligibleUsers];
+
+    for (let i = 0; i < winnerCount && remainingUsers.length > 0; i++) {
+        // Calculate cumulative weights
+        const weights = [];
+        let cumulative = 0;
+
+        for (const user of remainingUsers) {
+            cumulative += user.entries;
+            weights.push({ email: user.email, entries: user.entries, cumulative });
+        }
+
+        // Random selection
+        const random = Math.random() * cumulative;
+        const winner = weights.find(w => random <= w.cumulative);
+
+        if (winner) {
+            winners.push({
+                email: winner.email,
+                entries: winner.entries,
+                probability: (winner.entries / cumulative).toFixed(4)
+            });
+
+            // Remove winner from remaining users to avoid duplicate selection
+            const index = remainingUsers.findIndex(u => u.email === winner.email);
+            remainingUsers.splice(index, 1);
+        }
+    }
+
+    return winners;
+}
+
+/**
+ * Execute lottery draw (admin only)
+ */
+fastify.post('/api/admin/lottery/draw', async (request, reply) => {
+    if (!verifyAdminToken(request, reply)) return;
+
+    const { winnerCount = 1 } = request.body;
+
+    if (winnerCount < 1 || winnerCount > 100) {
+        return reply.code(400).send({ error: 'Winner count must be between 1 and 100' });
+    }
+
+    const users = await readUsers();
+    const lottery = await readLottery();
+
+    // Get eligible users count
+    const eligibleUsers = Object.entries(users).filter(([_, data]) => data.entries > 0);
+    const totalEntries = eligibleUsers.reduce((sum, [_, data]) => sum + data.entries, 0);
+
+    if (eligibleUsers.length === 0) {
+        return reply.code(400).send({ error: 'No users with entries available for lottery' });
+    }
+
+    // Perform lottery
+    const winners = performWeightedLottery(users, winnerCount);
+
+    // Save lottery result
+    const lotteryResult = {
+        id: crypto.randomBytes(16).toString('hex'),
+        date: getTodayDate(),
+        timestamp: new Date().toISOString(),
+        winners,
+        totalParticipants: eligibleUsers.length,
+        totalEntries,
+        requestedWinners: winnerCount,
+        actualWinners: winners.length
+    };
+
+    lottery.history.unshift(lotteryResult); // Add to beginning of array
+    await writeLottery(lottery);
+
+    return {
+        success: true,
+        lottery: lotteryResult
+    };
+});
+
+/**
+ * Get lottery history (admin only)
+ */
+fastify.get('/api/admin/lottery/history', async (request, reply) => {
+    if (!verifyAdminToken(request, reply)) return;
+
+    const { limit = 20 } = request.query;
+    const lottery = await readLottery();
+
+    // Return limited history
+    const history = lottery.history.slice(0, limit);
+
+    return {
+        success: true,
+        history,
+        total: lottery.history.length
     };
 });
 

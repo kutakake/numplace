@@ -8,38 +8,62 @@
       </div>
     </div>
     
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+      <button 
+        :class="['tab-btn', { active: activeTab === 'stats' }]"
+        @click="activeTab = 'stats'"
+      >
+        📊 統計
+      </button>
+      <button 
+        :class="['tab-btn', { active: activeTab === 'users' }]"
+        @click="activeTab = 'users'"
+      >
+        👥 ユーザー一覧
+      </button>
+      <button 
+        :class="['tab-btn', { active: activeTab === 'lottery' }]"
+        @click="activeTab = 'lottery'"
+      >
+        🎰 抽選管理
+      </button>
+    </div>
+    
     <div v-if="loading" class="spinner"></div>
     
     <div v-else>
-      <!-- Statistics Cards -->
-      <div class="stats-grid">
-        <div class="stat-card card">
-          <div class="stat-icon">👥</div>
-          <div class="stat-value">{{ stats.totalUsers }}</div>
-          <div class="stat-label">総ユーザー数</div>
-        </div>
-        
-        <div class="stat-card card">
-          <div class="stat-icon">🎟️</div>
-          <div class="stat-value">{{ stats.totalEntries }}</div>
-          <div class="stat-label">総応募口数</div>
-        </div>
-        
-        <div class="stat-card card">
-          <div class="stat-icon">✅</div>
-          <div class="stat-value">{{ stats.totalPuzzlesSolved }}</div>
-          <div class="stat-label">総解答数</div>
-        </div>
-        
-        <div class="stat-card card">
-          <div class="stat-icon">📅</div>
-          <div class="stat-value">{{ stats.todaySolvers }}</div>
-          <div class="stat-label">今日の解答者</div>
+      <!-- Statistics Tab -->
+      <div v-show="activeTab === 'stats'">
+        <div class="stats-grid">
+          <div class="stat-card card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-value">{{ stats.totalUsers }}</div>
+            <div class="stat-label">総ユーザー数</div>
+          </div>
+          
+          <div class="stat-card card">
+            <div class="stat-icon">🎟️</div>
+            <div class="stat-value">{{ stats.totalEntries }}</div>
+            <div class="stat-label">総応募口数</div>
+          </div>
+          
+          <div class="stat-card card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value">{{ stats.totalPuzzlesSolved }}</div>
+            <div class="stat-label">総解答数</div>
+          </div>
+          
+          <div class="stat-card card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-value">{{ stats.todaySolvers }}</div>
+            <div class="stat-label">今日の解答者</div>
+          </div>
         </div>
       </div>
       
-      <!-- Users Table -->
-      <div class="users-section card">
+      <!-- Users Tab -->
+      <div v-show="activeTab === 'users'" class="users-section card">
         <h2>📋 ユーザー一覧</h2>
         
         <div class="table-container">
@@ -67,17 +91,27 @@
           </div>
         </div>
       </div>
+      
+      <!-- Lottery Tab -->
+      <div v-show="activeTab === 'lottery'">
+        <LotteryManagement />
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import { API_URL } from '../config.js'
+import LotteryManagement from './LotteryManagement.vue'
 
 export default {
   name: 'AdminDashboard',
+  components: {
+    LotteryManagement
+  },
   data() {
     return {
+      activeTab: 'stats',
       loading: true,
       users: [],
       stats: {
@@ -223,6 +257,39 @@ export default {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+}
+
+.tab-navigation {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid var(--border);
+  overflow-x: auto;
+}
+
+.tab-btn {
+  padding: 1rem 2rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-dark);
+}
+
+.tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: rgba(139, 92, 246, 0.1);
 }
 
 .btn-danger {

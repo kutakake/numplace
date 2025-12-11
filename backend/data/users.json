@@ -1,6 +1,6 @@
 {
   "test@example.com": {
-    "entries": 1,
+    "entries": 0,
     "solvedDates": [
       "2025-12-10"
     ]
@@ -8,5 +8,18 @@
   "a@example.com": {
     "entries": 0,
     "solvedDates": []
+  },
+  "winner@example.com": {
+    "entries": 0,
+    "solvedDates": [
+      "2025-12-10",
+      "2025-12-11"
+    ]
+  },
+  "lucky@example.com": {
+    "entries": 0,
+    "solvedDates": [
+      "2025-12-11"
+    ]
   }
 }
