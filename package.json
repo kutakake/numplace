@@ -1,0 +1,25 @@
+{
+    "name": "numplace",
+    "version": "1.0.0",
+    "description": "Sudoku prize contest website",
+    "scripts": {
+        "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+        "start:backend": "cd backend && npm start",
+        "start:frontend": "cd frontend/dist && npx serve -s . -p 8080",
+        "dev": "concurrently \"npm run start:backend\" \"npm run dev:frontend\"",
+        "dev:frontend": "cd frontend && npm run dev",
+        "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+        "build:frontend": "cd frontend && npm run build"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    },
+    "keywords": [
+        "sudoku",
+        "contest",
+        "vue",
+        "fastify"
+    ],
+    "author": "",
+    "license": "MIT"
+}

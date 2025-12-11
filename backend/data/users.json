@@ -1,0 +1,12 @@
+{
+  "test@example.com": {
+    "entries": 1,
+    "solvedDates": [
+      "2025-12-10"
+    ]
+  },
+  "a@example.com": {
+    "entries": 0,
+    "solvedDates": []
+  }
+}

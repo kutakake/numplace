@@ -1,0 +1,16 @@
+{
+  "name": "numplace-backend",
+  "version": "1.0.0",
+  "description": "Sudoku prize contest backend API",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "fastify": "^4.25.2",
+    "@fastify/cors": "^8.5.0",
+    "node-cron": "^3.0.3"
+  }
+}
