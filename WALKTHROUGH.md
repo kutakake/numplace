@@ -267,13 +267,56 @@ numplace/
 
 ---
 
+### 7. 抽選機能
+
+重み付き抽選機能を実装しました。応募口数に応じた確率で当選者を選ぶことができます。
+
+#### 主要機能
+- **重み付き抽選**: 応募口数が多いほど当選確率が高い
+- **複数当選者対応**: 一度に複数名の当選者を選択可能
+- **抽選履歴**: 過去の抽選記録を保存・表示
+- **タブナビゲーション**: 管理ダッシュボードにタブを追加
+
+#### バックエンド
+- `POST /api/admin/lottery/draw` - 抽選実行エンドポイント
+- `GET /api/admin/lottery/history` - 抽選履歴取得エンドポイント
+- 重み付きランダム抽選アルゴリズム
+- 同一ユーザーの重複当選防止
+
+#### フロントエンド
+- [LotteryManagement.vue](file:///home/ubuntu/GitHub/numplace/frontend/src/components/LotteryManagement.vue) - 抽選管理コンポーネント
+  - 抽選実行フォーム
+  - 応募状況表示
+  - 最新抽選結果表示
+  - 抽選履歴一覧
+- [AdminDashboard.vue](file:///home/ubuntu/GitHub/numplace/frontend/src/components/AdminDashboard.vue) - タブナビゲーション追加
+  - 📊 統計
+  - 👥 ユーザー一覧
+  - 🎰 抽選管理（新規）
+
+#### 使い方
+1. **http://localhost:8080/#admin** にアクセス
+2. 管理者ログイン
+3. 「🎰 抽選管理」タブをクリック
+4. 当選者数を入力（1〜100名）
+5. 「🎰 抽選を実行」ボタンをクリック
+6. 確認ダイアログで「OK」をクリック
+7. 抽選結果と履歴が表示される
+
+**実装箇所:**
+- [server.js](file:///home/ubuntu/GitHub/numplace/backend/server.js) - `/api/admin/lottery/*` エンドポイント
+- [lottery.json](file:///home/ubuntu/GitHub/numplace/backend/data/lottery.json) - 抽選履歴データ
+- [LotteryManagement.vue](file:///home/ubuntu/GitHub/numplace/frontend/src/components/LotteryManagement.vue) - 抽選管理UI
+- [AdminDashboard.vue](file:///home/ubuntu/GitHub/numplace/frontend/src/components/AdminDashboard.vue) - タブ統合
+
+---
+
 ## 💡 今後の拡張案
 
 - [ ] データベース移行（PostgreSQL、MongoDB）
 - [ ] パスワードのハッシュ化（bcrypt）
 - [ ] 難易度選択機能
-- [ ] 実際の抽選機能
-- [ ] メール通知機能
+- [ ] メール通知機能（当選者への自動通知）
 - [ ] 問題履歴の表示
 - [ ] ユーザー統計グラフ
 
@@ -291,7 +334,8 @@ numplace/
 - ✅ ルールベース検証
 - ✅ 外部アクセス対応
 - ✅ 一括起動スクリプト
-- ✅ 管理者ダッシュボード
+- ✅ 管理者ダッシュボード（タブナビゲーション）
 - ✅ 応募口数リセット機能
+- ✅ 重み付き抽選機能
 
 すぐに本番環境で使えるよ！🎉
