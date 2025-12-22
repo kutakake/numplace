@@ -3,6 +3,15 @@
  */
 
 /**
+ * Difficulty settings for puzzle generation
+ */
+const DIFFICULTY_SETTINGS = {
+  easy: { minClues: 40, maxClues: 45, entries: 1 },
+  normal: { minClues: 30, maxClues: 35, entries: 2 },
+  hard: { minClues: 25, maxClues: 28, entries: 3 }
+};
+
+/**
  * Check if placing a number at position is valid
  */
 function isValid(board, row, col, num) {
@@ -187,4 +196,24 @@ function validateAnswer(userAnswer, puzzle) {
   return true;
 }
 
-export { createPuzzle, validateAnswer };
+/**
+ * Generate a puzzle with specified difficulty level
+ * @param {string} difficulty - Difficulty level: 'easy', 'normal', or 'hard'
+ * @returns {object} Puzzle and solution
+ */
+function generatePuzzleWithDifficulty(difficulty = 'normal') {
+  const settings = DIFFICULTY_SETTINGS[difficulty];
+  if (!settings) {
+    throw new Error(`Invalid difficulty: ${difficulty}`);
+  }
+
+  // Calculate number of clues to leave (random within range)
+  const clues = Math.floor(Math.random() * (settings.maxClues - settings.minClues + 1)) + settings.minClues;
+
+  // Calculate cells to remove (81 total cells - clues)
+  const cellsToRemove = 81 - clues;
+
+  return createPuzzle(cellsToRemove);
+}
+
+export { createPuzzle, validateAnswer, generatePuzzleWithDifficulty, DIFFICULTY_SETTINGS };

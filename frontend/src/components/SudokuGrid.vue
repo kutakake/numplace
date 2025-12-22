@@ -5,6 +5,24 @@
       <div v-if="todayDate" class="date-badge badge">{{ todayDate }}</div>
     </div>
     
+    <!-- Difficulty Selector -->
+    <div class="difficulty-selector">
+      <div class="difficulty-title">難易度を選択:</div>
+      <div class="difficulty-buttons">
+        <button
+          v-for="diff in difficulties"
+          :key="diff.value"
+          :class="['diff-btn', diff.value, { active: difficulty === diff.value }]"
+          @click="selectDifficulty(diff.value)"
+          :disabled="loading"
+        >
+          <div class="diff-icon">{{ diff.icon }}</div>
+          <div class="diff-label">{{ diff.label }}</div>
+          <div class="diff-entries">+{{ diff.entries }}口</div>
+        </button>
+      </div>
+    </div>
+    
     <div v-if="loading" class="spinner"></div>
     
     <div v-else-if="error" class="alert alert-error">
@@ -106,6 +124,12 @@ export default {
   },
   data() {
     return {
+      difficulty: 'normal',
+      difficulties: [
+        { value: 'easy', label: 'Easy', icon: '🟢', entries: 1 },
+        { value: 'normal', label: 'Normal', icon: '🔵', entries: 2 },
+        { value: 'hard', label: 'Hard', icon: '🔴', entries: 3 }
+      ],
       puzzle: null,
       currentGrid: [],
       todayDate: '',
@@ -163,12 +187,21 @@ export default {
       }
     },
     
+    selectDifficulty(diff) {
+      if (this.difficulty !== diff) {
+        this.difficulty = diff
+        this.alreadySolved = false
+        this.message = ''
+        this.loadPuzzle()
+      }
+    },
+    
     async loadPuzzle() {
       this.loading = true
       this.error = ''
       
       try {
-        const response = await fetch(`${API_URL}/api/puzzle/today`)
+        const response = await fetch(`${API_URL}/api/puzzle/today?difficulty=${this.difficulty}`)
         const data = await response.json()
         
         if (response.ok) {
@@ -204,7 +237,8 @@ export default {
           },
           body: JSON.stringify({
             email: this.userEmail,
-            answer: this.currentGrid
+            answer: this.currentGrid,
+            difficulty: this.difficulty
           })
         })
         
@@ -276,6 +310,111 @@ export default {
 
 .date-badge {
   font-size: 0.875rem;
+}
+
+.difficulty-selector {
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  background: var(--bg-dark);
+  border-radius: 1rem;
+  border: 2px solid var(--border);
+}
+
+.difficulty-title {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.difficulty-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.diff-btn {
+  padding: 1rem;
+  border: 2px solid transparent;
+  border-radius: 0.75rem;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+
+.diff-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.diff-btn.easy {
+  border-color: #10b981;
+}
+
+.diff-btn.normal {
+  border-color: #3b82f6;
+}
+
+.diff-btn.hard {
+  border-color: #ef4444;
+}
+
+.diff-btn.active.easy {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+}
+
+.diff-btn.active.normal {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.diff-btn.active.hard {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+}
+
+.diff-btn.active {
+  transform: translateY(-2px);
+}
+
+.diff-btn:hover:not(:disabled):not(.active) {
+  transform: translateY(-2px);
+  border-width: 3px;
+}
+
+.diff-icon {
+  font-size: 2rem;
+}
+
+.diff-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.diff-btn.active .diff-label {
+  color: white;
+}
+
+.diff-entries {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 0.25rem 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+}
+
+.diff-btn.active .diff-entries {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
 }
 
 .puzzle-container {
@@ -442,6 +581,10 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .difficulty-buttons {
+    grid-template-columns: 1fr;
+  }
+  
   .sudoku-cell {
     width: 36px;
     height: 36px;

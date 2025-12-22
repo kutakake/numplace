@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { createPuzzle } from './sudoku.js';
+import { generatePuzzleWithDifficulty } from './sudoku.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -20,7 +20,7 @@ function getTodayDate() {
 }
 
 /**
- * Generate and save today's puzzle
+ * Generate and save today's puzzle for all difficulty levels
  */
 async function generateTodayPuzzle() {
     try {
@@ -43,13 +43,20 @@ async function generateTodayPuzzle() {
             return;
         }
 
-        // Generate new puzzle
-        const { puzzle, solution } = createPuzzle(45); // Medium difficulty
-        puzzles[todayDate] = { puzzle, solution };
+        // Generate puzzles for all three difficulty levels
+        const easyPuzzle = generatePuzzleWithDifficulty('easy');
+        const normalPuzzle = generatePuzzleWithDifficulty('normal');
+        const hardPuzzle = generatePuzzleWithDifficulty('hard');
+
+        puzzles[todayDate] = {
+            easy: { puzzle: easyPuzzle.puzzle, solution: easyPuzzle.solution },
+            normal: { puzzle: normalPuzzle.puzzle, solution: normalPuzzle.solution },
+            hard: { puzzle: hardPuzzle.puzzle, solution: hardPuzzle.solution }
+        };
 
         // Save to file
         await fs.writeFile(PUZZLES_FILE, JSON.stringify(puzzles, null, 2));
-        console.log(`Puzzle for ${todayDate} generated successfully!`);
+        console.log(`Puzzles for ${todayDate} generated successfully (easy, normal, hard)!`);
     } catch (error) {
         console.error('Error generating puzzle:', error);
     }

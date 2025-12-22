@@ -1,6 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
-import { validateAnswer } from './sudoku.js';
+import { validateAnswer, DIFFICULTY_SETTINGS } from './sudoku.js';
 import { initScheduler } from './scheduler.js';
 import fs from 'fs/promises';
 import path from 'path';
@@ -105,7 +105,11 @@ fastify.post('/api/register', async (request, reply) => {
     if (!users[email]) {
         users[email] = {
             entries: 0,
-            solvedDates: []
+            solvedDates: {
+                easy: [],
+                normal: [],
+                hard: []
+            }
         };
         await writeUsers(users);
     }
@@ -118,9 +122,10 @@ fastify.post('/api/register', async (request, reply) => {
 });
 
 /**
- * Get today's puzzle
+ * Get today's puzzle with specified difficulty
  */
 fastify.get('/api/puzzle/today', async (request, reply) => {
+    const { difficulty = 'normal' } = request.query;
     const todayDate = getTodayDate();
     const puzzles = await readPuzzles();
 
@@ -128,21 +133,32 @@ fastify.get('/api/puzzle/today', async (request, reply) => {
         return reply.code(404).send({ error: 'No puzzle available for today' });
     }
 
+    // Validate difficulty parameter
+    if (!['easy', 'normal', 'hard'].includes(difficulty)) {
+        return reply.code(400).send({ error: 'Invalid difficulty. Must be easy, normal, or hard.' });
+    }
+
     // Don't send the solution to the client
     return {
         date: todayDate,
-        puzzle: puzzles[todayDate].puzzle
+        difficulty,
+        puzzle: puzzles[todayDate][difficulty].puzzle
     };
 });
 
 /**
- * Submit answer and validate
+ * Submit answer and validate with difficulty support
  */
 fastify.post('/api/submit', async (request, reply) => {
-    const { email, answer } = request.body;
+    const { email, answer, difficulty = 'normal' } = request.body;
 
     if (!email || !answer) {
         return reply.code(400).send({ error: 'Email and answer are required' });
+    }
+
+    // Validate difficulty
+    if (!['easy', 'normal', 'hard'].includes(difficulty)) {
+        return reply.code(400).send({ error: 'Invalid difficulty. Must be easy, normal, or hard.' });
     }
 
     const users = await readUsers();
@@ -150,6 +166,15 @@ fastify.post('/api/submit', async (request, reply) => {
         return reply.code(404).send({ error: 'User not found. Please register first.' });
     }
 
+    // Ensure user has proper data structure (for backward compatibility)
+    if (!users[email].solvedDates || typeof users[email].solvedDates !== 'object') {
+        users[email].solvedDates = {
+            easy: [],
+            normal: [],
+            hard: []
+        };
+    }
+
     const todayDate = getTodayDate();
     const puzzles = await readPuzzles();
 
@@ -157,34 +182,41 @@ fastify.post('/api/submit', async (request, reply) => {
         return reply.code(404).send({ error: 'No puzzle available for today' });
     }
 
-    // Check if already solved today
-    if (users[email].solvedDates.includes(todayDate)) {
+    // Check if already solved today's puzzle with this difficulty
+    if (users[email].solvedDates[difficulty]?.includes(todayDate)) {
         return {
             success: false,
             alreadySolved: true,
-            message: 'You have already solved today\'s puzzle',
+            difficulty,
+            message: `You have already solved today's ${difficulty} puzzle`,
             entries: users[email].entries
         };
     }
 
-    const puzzle = puzzles[todayDate].puzzle;
+    const puzzle = puzzles[todayDate][difficulty].puzzle;
     const isCorrect = validateAnswer(answer, puzzle);
 
     if (isCorrect) {
-        users[email].entries += 1;
-        users[email].solvedDates.push(todayDate);
+        // Get entries for this difficulty
+        const entriesEarned = DIFFICULTY_SETTINGS[difficulty].entries;
+
+        users[email].entries += entriesEarned;
+        users[email].solvedDates[difficulty].push(todayDate);
         await writeUsers(users);
 
         return {
             success: true,
             correct: true,
+            difficulty,
+            entriesEarned,
             entries: users[email].entries,
-            message: 'Correct! Your entry count has been increased.'
+            message: `Correct! You earned ${entriesEarned} entry ticket(s)!`
         };
     } else {
         return {
             success: true,
             correct: false,
+            difficulty,
             entries: users[email].entries,
             message: 'Incorrect answer. Please try again.'
         };
