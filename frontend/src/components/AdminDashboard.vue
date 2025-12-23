@@ -81,7 +81,7 @@
                 <td>{{ user.email }}</td>
                 <td><span class="badge-entries">{{ user.entries }}</span></td>
                 <td>{{ user.totalSolved }}</td>
-                <td>{{ user.solvedDates.length > 0 ? user.solvedDates[user.solvedDates.length - 1] : '-' }}</td>
+                <td>{{ getLastSolvedDate(user.solvedDates) }}</td>
               </tr>
             </tbody>
           </table>
@@ -157,8 +157,14 @@ export default {
           }
         })
         
+        if (!statsResponse.ok) {
+          throw new Error('Failed to load stats')
+        }
+        
         const statsData = await statsResponse.json()
-        this.stats = statsData.stats
+        if (statsData.stats) {
+          this.stats = statsData.stats
+        }
         
       } catch (err) {
         console.error(err)
@@ -223,6 +229,26 @@ export default {
       } finally {
         this.resetting = false
       }
+    },
+    
+    getLastSolvedDate(solvedDates) {
+      if (!solvedDates || typeof solvedDates !== 'object') {
+        return '-'
+      }
+      
+      // Collect all dates from all difficulty levels
+      const allDates = [
+        ...(solvedDates.easy || []),
+        ...(solvedDates.normal || []),
+        ...(solvedDates.hard || [])
+      ]
+      
+      if (allDates.length === 0) {
+        return '-'
+      }
+      
+      // Return the most recent date (dates are in YYYY-MM-DD format, so string comparison works)
+      return allDates.sort().reverse()[0]
     }
   },
   mounted() {

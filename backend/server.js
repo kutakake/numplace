@@ -295,12 +295,22 @@ fastify.get('/api/admin/users', async (request, reply) => {
     const users = await readUsers();
 
     // Convert to array format for easier display
-    const userList = Object.entries(users).map(([email, data]) => ({
-        email,
-        entries: data.entries,
-        solvedDates: data.solvedDates,
-        totalSolved: data.solvedDates.length
-    }));
+    const userList = Object.entries(users).map(([email, data]) => {
+        // Calculate total solved puzzles across all difficulties
+        let totalSolved = 0;
+        if (data.solvedDates && typeof data.solvedDates === 'object') {
+            totalSolved = (data.solvedDates.easy?.length || 0) +
+                (data.solvedDates.normal?.length || 0) +
+                (data.solvedDates.hard?.length || 0);
+        }
+
+        return {
+            email,
+            entries: data.entries,
+            solvedDates: data.solvedDates,
+            totalSolved
+        };
+    });
 
     return {
         success: true,
@@ -320,14 +330,30 @@ fastify.get('/api/admin/stats', async (request, reply) => {
 
     const totalUsers = Object.keys(users).length;
     const totalEntries = Object.values(users).reduce((sum, user) => sum + user.entries, 0);
-    const totalPuzzlesSolved = Object.values(users).reduce((sum, user) => sum + user.solvedDates.length, 0);
+
+    // Count total puzzles solved across all difficulties
+    const totalPuzzlesSolved = Object.values(users).reduce((sum, user) => {
+        if (user.solvedDates && typeof user.solvedDates === 'object') {
+            const easyCount = user.solvedDates.easy?.length || 0;
+            const normalCount = user.solvedDates.normal?.length || 0;
+            const hardCount = user.solvedDates.hard?.length || 0;
+            return sum + easyCount + normalCount + hardCount;
+        }
+        return sum;
+    }, 0);
+
     const totalPuzzles = Object.keys(puzzles).length;
 
     // Get today's stats
     const todayDate = getTodayDate();
-    const todaySolvers = Object.values(users).filter(user =>
-        user.solvedDates.includes(todayDate)
-    ).length;
+    const todaySolvers = Object.values(users).filter(user => {
+        if (user.solvedDates && typeof user.solvedDates === 'object') {
+            return user.solvedDates.easy?.includes(todayDate) ||
+                user.solvedDates.normal?.includes(todayDate) ||
+                user.solvedDates.hard?.includes(todayDate);
+        }
+        return false;
+    }).length;
 
     return {
         success: true,
