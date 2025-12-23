@@ -175,15 +175,61 @@ export default {
       }
     },
     
+    // ローカルストレージのキーを生成
+    getStorageKey() {
+      return `numplace_grid_${this.todayDate}_${this.difficulty}`
+    },
+    
+    // ローカルストレージに保存
+    saveToLocalStorage() {
+      try {
+        const key = this.getStorageKey()
+        localStorage.setItem(key, JSON.stringify(this.currentGrid))
+      } catch (err) {
+        console.error('ローカルストレージへの保存に失敗:', err)
+      }
+    },
+    
+    // ローカルストレージから復元
+    loadFromLocalStorage() {
+      try {
+        const key = this.getStorageKey()
+        const saved = localStorage.getItem(key)
+        if (saved) {
+          const savedGrid = JSON.parse(saved)
+          // 保存されたデータが正しい形式か確認
+          if (Array.isArray(savedGrid) && savedGrid.length === 9) {
+            this.currentGrid = savedGrid
+            return true
+          }
+        }
+      } catch (err) {
+        console.error('ローカルストレージからの復元に失敗:', err)
+      }
+      return false
+    },
+    
+    // ローカルストレージをクリア
+    clearLocalStorage() {
+      try {
+        const key = this.getStorageKey()
+        localStorage.removeItem(key)
+      } catch (err) {
+        console.error('ローカルストレージのクリアに失敗:', err)
+      }
+    },
+    
     inputNumber(num) {
       if (this.hasSelectedCell) {
         this.currentGrid[this.selectedRow][this.selectedCol] = num
+        this.saveToLocalStorage()
       }
     },
     
     clearSelected() {
       if (this.hasSelectedCell) {
         this.currentGrid[this.selectedRow][this.selectedCol] = 0
+        this.saveToLocalStorage()
       }
     },
     
@@ -208,6 +254,12 @@ export default {
           this.puzzle = data.puzzle
           this.todayDate = data.date
           this.currentGrid = this.puzzle.map(row => [...row])
+          
+          // ローカルストレージから以前の入力を復元
+          const restored = this.loadFromLocalStorage()
+          if (restored) {
+            console.log('以前の入力を復元しました')
+          }
         } else {
           this.error = data.error || 'パズルの読み込みに失敗しました'
         }
@@ -250,6 +302,8 @@ export default {
           if (data.correct) {
             this.messageClass = 'alert-success'
             this.$emit('solved', data.entries)
+            // 正解したのでローカルストレージをクリア
+            this.clearLocalStorage()
           } else if (data.alreadySolved) {
             this.messageClass = 'alert-info'
             this.alreadySolved = true
