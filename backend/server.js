@@ -299,9 +299,15 @@ fastify.get('/api/admin/users', async (request, reply) => {
         // Calculate total solved puzzles across all difficulties
         let totalSolved = 0;
         if (data.solvedDates && typeof data.solvedDates === 'object') {
-            totalSolved = (data.solvedDates.easy?.length || 0) +
-                (data.solvedDates.normal?.length || 0) +
-                (data.solvedDates.hard?.length || 0);
+            // Handle old array format (backward compatibility)
+            if (Array.isArray(data.solvedDates)) {
+                totalSolved = data.solvedDates.length;
+            } else {
+                // Handle new object format with difficulty levels
+                totalSolved = (data.solvedDates.easy?.length || 0) +
+                    (data.solvedDates.normal?.length || 0) +
+                    (data.solvedDates.hard?.length || 0);
+            }
         }
 
         return {
@@ -334,6 +340,11 @@ fastify.get('/api/admin/stats', async (request, reply) => {
     // Count total puzzles solved across all difficulties
     const totalPuzzlesSolved = Object.values(users).reduce((sum, user) => {
         if (user.solvedDates && typeof user.solvedDates === 'object') {
+            // Handle old array format (backward compatibility)
+            if (Array.isArray(user.solvedDates)) {
+                return sum + user.solvedDates.length;
+            }
+            // Handle new object format with difficulty levels
             const easyCount = user.solvedDates.easy?.length || 0;
             const normalCount = user.solvedDates.normal?.length || 0;
             const hardCount = user.solvedDates.hard?.length || 0;
@@ -348,6 +359,11 @@ fastify.get('/api/admin/stats', async (request, reply) => {
     const todayDate = getTodayDate();
     const todaySolvers = Object.values(users).filter(user => {
         if (user.solvedDates && typeof user.solvedDates === 'object') {
+            // Handle old array format (backward compatibility)
+            if (Array.isArray(user.solvedDates)) {
+                return user.solvedDates.includes(todayDate);
+            }
+            // Handle new object format with difficulty levels
             return user.solvedDates.easy?.includes(todayDate) ||
                 user.solvedDates.normal?.includes(todayDate) ||
                 user.solvedDates.hard?.includes(todayDate);
